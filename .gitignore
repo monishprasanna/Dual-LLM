@@ -1,0 +1,28 @@
+# Environments & Virtual Envs
+unsloth-env/
+venv/
+.env/
+env/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.flag
+
+# Model weights & Checkpoints (large binary files)
+*.gguf
+lora_adapter/
+merged_model/
+training_outputs/
+retrain_outputs/
+
+# Unrelated project folders
+auto_video_publisher/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

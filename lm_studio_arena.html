@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual LLM Studio Workbench & Arena</title>
+    <meta name="description" content="Interact with local LLMs individually or orchestrate back-and-forth automated conversations between Model A and Model B.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Marked JS for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0d14;
+            --bg-card: rgba(20, 24, 38, 0.75);
+            --bg-card-hover: rgba(28, 34, 54, 0.85);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --border-highlight: rgba(120, 119, 198, 0.3);
+            
+            --model-a-accent: #6366f1;
+            --model-a-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --model-a-glow: rgba(99, 102, 241, 0.25);
+            
+            --model-b-accent: #06b6d4;
+            --model-b-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            --model-b-glow: rgba(6, 182, 212, 0.25);
+
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            --leak-bg: rgba(239, 68, 68, 0.12);
+            --leak-border: rgba(239, 68, 68, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        header {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 13, 20, 0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .brand h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .server-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        /* Navigation Mode Tabs */
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            gap: 4px;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            padding: 1.5rem 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Model Configuration Card */
+        .config-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .config-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .config-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .model-config-box {
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .model-config-box.model-a {
+            border-left: 4px solid var(--model-a-accent);
+        }
+
+        .model-config-box.model-b {
+            border-left: 4px solid var(--model-b-accent);
+        }
+
+        .box-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .model-a-txt { color: #818cf8; }
+        .model-b-txt { color: #22d3ee; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            background: rgba(15, 17, 26, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            border-color: var(--model-a-accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 55px;
+        }
+
+        /* View Sections */
+        .view-section {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        /* Individual Chat View */
+        .dual-chat-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 310px);
+            min-height: 500px;
+        }
+
+        @media (max-width: 900px) {
+            .dual-chat-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        .chat-column {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        .chat-column.model-a-column {
+            border-top: 3px solid var(--model-a-accent);
+        }
+
+        .chat-column.model-b-column {
+            border-top: 3px solid var(--model-b-accent);
+        }
+
+        .column-header {
+            padding: 0.8rem 1.2rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .column-header h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-input-area {
+            padding: 0.8rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Shared Message Bubble Styles */
+        .msg {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            max-width: 90%;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg.user {
+            align-self: flex-end;
+        }
+
+        .msg.assistant {
+            align-self: flex-start;
+        }
+
+        .msg-bubble {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .msg.user .msg-bubble {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .msg.assistant.model-a-msg .msg-bubble {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #f3f4f6;
+            border-bottom-left-radius: 2px;
+        }
+
+        .msg.assistant.model-b-msg .msg-bubble {
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            color: #f3f4f6;
+            border-bottom-left-radius: 2px;
+        }
+
+        .msg-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin: 0 4px;
+        }
+
+        .msg.user .msg-meta { align-self: flex-end; }
+        .msg.assistant .msg-meta { align-self: flex-start; }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary-a {
+            background: var(--model-a-gradient);
+            color: #fff;
+            box-shadow: 0 4px 12px var(--model-a-glow);
+        }
+
+        .btn-primary-b {
+            background: var(--model-b-gradient);
+            color: #fff;
+            box-shadow: 0 4px 12px var(--model-b-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Arena Controls */
+        .arena-controls {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .arena-prompt-box {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .arena-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Arena Feed */
+        .arena-feed-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            height: calc(100vh - 380px);
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        .arena-feed-header {
+            padding: 0.8rem 1.5rem;
+            background: rgba(0, 0, 0, 0.25);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .turn-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-bar-bg {
+            width: 140px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--model-a-accent), var(--model-b-accent));
+            transition: width 0.3s ease;
+        }
+
+        .arena-feed {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        /* Card in Arena Feed */
+        .arena-card {
+            background: rgba(15, 17, 26, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .arena-card.model-a {
+            border-left: 4px solid var(--model-a-accent);
+            background: rgba(99, 102, 241, 0.04);
+        }
+
+        .arena-card.model-b {
+            border-left: 4px solid var(--model-b-accent);
+            background: rgba(6, 182, 212, 0.04);
+        }
+
+        .arena-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .badge-a { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); }
+        .badge-b { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4); }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 0.5rem;
+            text-align: center;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand">
+            <div class="brand-logo">⚔️</div>
+            <div>
+                <h1>Dual LLM Workbench & Arena</h1>
+            </div>
+            <div class="server-status-badge">
+                <div class="status-dot"></div> Proxy Server & Local Engine Active
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="tab-btn active" id="tabIndividualBtn">
+                💬 Individual Prompt Mode
+            </button>
+            <button class="tab-btn" id="tabArenaBtn">
+                🤖 Inter-LLM Auto Conversation
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Model Configuration Section -->
+        <section class="config-card">
+            <div class="config-header" id="configToggle">
+                <h2>⚙️ Model Endpoint & API Configurations</h2>
+                <span id="configToggleIcon" style="font-size: 0.85rem; color: var(--text-muted);">▲ Collapse Settings</span>
+            </div>
+
+            <div class="config-grid" id="configContent">
+                <!-- Model A Config -->
+                <div class="model-config-box model-a">
+                    <div class="box-title model-a-txt">
+                        <span>🤖 Model A Configuration</span>
+                        <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="detectModels('A')">🔄 Fetch LM Studio Models</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Model ID / Name</label>
+                            <input type="text" id="modelA_id" value="Local-Patient-Model" placeholder="e.g. Local-Patient-Model">
+                        </div>
+                        <div class="form-group">
+                            <label>API Format</label>
+                            <select id="modelA_format">
+                                <option value="localpython" selected>🐍 Local Patient Model (Direct Python /api/local_model/chat)</option>
+                                <option value="openai">OpenAI Compatible (/v1/chat/completions)</option>
+                                <option value="lmstudio">LM Studio Native (/api/v1/chat)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Endpoint URL</label>
+                        <input type="text" id="modelA_url" value="/api/local_model/chat" placeholder="/api/local_model/chat or http://localhost:1234/v1">
+                    </div>
+                    <div class="form-group">
+                        <label>System Prompt</label>
+                        <textarea id="modelA_system" placeholder="System instructions for Model A">You are a local patient dataset model trained on synthetic patient records.</textarea>
+                    </div>
+                </div>
+
+                <!-- Model B Config -->
+                <div class="model-config-box model-b">
+                    <div class="box-title model-b-txt">
+                        <span>🧠 Model B Configuration</span>
+                        <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="detectModels('B')">🔄 Fetch LM Studio Models</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Model ID / Name</label>
+                            <input type="text" id="modelB_id" value="llama-3.2-3b-instruct-uncensored" placeholder="e.g. llama-3.2-3b-instruct-uncensored">
+                        </div>
+                        <div class="form-group">
+                            <label>API Format</label>
+                            <select id="modelB_format">
+                                <option value="lmstudio" selected>LM Studio Native (/api/v1/chat)</option>
+                                <option value="openai">OpenAI Compatible (/v1/chat/completions)</option>
+                                <option value="localpython">🐍 Local Patient Model (Direct Python /api/local_model/chat)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Endpoint URL</label>
+                        <input type="text" id="modelB_url" value="http://localhost:1234/api/v1/chat" placeholder="http://localhost:1234/api/v1/chat">
+                    </div>
+                    <div class="form-group">
+                        <label>System Prompt</label>
+                        <textarea id="modelB_system" placeholder="System instructions for Model B">You answer only in rhymes.</textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ── LEAK ALERT BANNER ──────────────────────────────────── -->
+        <div id="leakAlertBanner" style="
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: var(--leak-bg);
+            border: 1px solid var(--leak-border);
+            border-radius: 12px;
+            padding: 14px 20px;
+            max-width: 680px;
+            width: 90%;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 30px rgba(239,68,68,0.25);
+            animation: slideDown 0.3s ease;
+        ">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+                <span style="font-size:1.4rem;">🚨</span>
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:#f87171; margin-bottom:4px;">
+                        Sensitive Data Leak Detected!
+                    </div>
+                    <div id="leakAlertDetail" style="font-size:0.82rem; color:#fca5a5; line-height:1.5;"></div>
+                    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button onclick="triggerRetrain()" style="
+                            background: linear-gradient(135deg,#ef4444,#b91c1c);
+                            color:#fff; border:none; border-radius:8px;
+                            padding:6px 14px; font-size:0.8rem; font-weight:600;
+                            cursor:pointer;">
+                            🔄 Retrain Model Now
+                        </button>
+                        <button onclick="checkFeedbackStatus()" style="
+                            background: rgba(255,255,255,0.1);
+                            color:#e5e7eb; border:1px solid rgba(255,255,255,0.15);
+                            border-radius:8px; padding:6px 14px;
+                            font-size:0.8rem; font-weight:600; cursor:pointer;">
+                            📊 View Feedback Log
+                        </button>
+                        <button onclick="document.getElementById('leakAlertBanner').style.display='none'" style="
+                            background:transparent; color:#9ca3af;
+                            border:none; cursor:pointer; font-size:0.8rem; margin-left:auto;">
+                            ✕ Dismiss
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECURITY PANEL (feedback counter + retrain button) ─── -->
+        <div id="securityPanel" style="
+            margin: 0 2rem 0.5rem;
+            padding: 10px 16px;
+            background: rgba(239,68,68,0.07);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.82rem;
+        ">
+            <span style="color:#f87171; font-weight:600;">🛡️ Security Monitor</span>
+            <span style="color:#9ca3af;">Leaks captured:</span>
+            <span id="feedbackCountBadge" style="
+                background:rgba(239,68,68,0.2); color:#fca5a5;
+                border-radius:20px; padding:2px 10px; font-weight:700;">0</span>
+            <button onclick="triggerRetrain()" style="
+                margin-left:auto;
+                background:linear-gradient(135deg,#ef4444,#b91c1c);
+                color:#fff; border:none; border-radius:8px;
+                padding:5px 14px; font-size:0.78rem; font-weight:600; cursor:pointer;">
+                🔄 Retrain from Feedback
+            </button>
+            <button onclick="checkFeedbackStatus()" style="
+                background:rgba(255,255,255,0.07);
+                color:#d1d5db; border:1px solid rgba(255,255,255,0.12);
+                border-radius:8px; padding:5px 12px;
+                font-size:0.78rem; cursor:pointer;">
+                📋 Feedback Log
+            </button>
+        </div>
+        <style>
+            @keyframes slideDown {
+                from { opacity:0; transform: translateX(-50%) translateY(-10px); }
+                to   { opacity:1; transform: translateX(-50%) translateY(0); }
+            }
+        </style>
+
+        <!-- VIEW 1: INDIVIDUAL PROMPT MODE -->
+
+        <section class="view-section active" id="viewIndividual">
+            <div class="dual-chat-container">
+                <!-- Column Model A -->
+                <div class="chat-column model-a-column">
+                    <div class="column-header">
+                        <h3>🤖 <span id="colHeaderA">Model A Chat (Local Patient Engine)</span></h3>
+                        <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" id="clearA">Clear</button>
+                    </div>
+                    <div class="chat-history" id="chatHistoryA">
+                        <div class="empty-state">
+                            <div>💬</div>
+                            <p>Send a prompt to Model A (Local Patient Model) individually</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="inputA" placeholder="Type prompt (e.g. 'Show info for patient P-1001')..." onkeydown="if(event.key==='Enter') sendSingleMessage('A')">
+                        <button class="btn btn-primary-a" onclick="sendSingleMessage('A')">Send</button>
+                    </div>
+                </div>
+
+                <!-- Column Model B -->
+                <div class="chat-column model-b-column">
+                    <div class="column-header">
+                        <h3>🧠 <span id="colHeaderB">Model B Chat (LM Studio)</span></h3>
+                        <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" id="clearB">Clear</button>
+                    </div>
+                    <div class="chat-history" id="chatHistoryB">
+                        <div class="empty-state">
+                            <div>💬</div>
+                            <p>Send a prompt to Model B individually</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="inputB" placeholder="Type prompt for Model B..." onkeydown="if(event.key==='Enter') sendSingleMessage('B')">
+                        <button class="btn btn-primary-b" onclick="sendSingleMessage('B')">Send</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: INTER-LLM AUTOMATED ARENA -->
+        <section class="view-section" id="viewArena">
+            <!-- Arena Controls Bar -->
+            <div class="arena-controls">
+                <div class="arena-prompt-box">
+                    <input type="text" id="arenaPrompt" value="Please summarize patient P-1001 diagnosis and medication." placeholder="Enter kickoff prompt to start conversation between Model A and B...">
+                    <div style="width: 100px;">
+                        <input type="number" id="arenaTurns" value="5" min="1" max="20" placeholder="Turns" title="Total Back-and-Forth Turns">
+                    </div>
+                </div>
+                <div class="arena-btn-group">
+                    <button class="btn btn-primary-a" id="btnArenaStart">🚀 Start Auto Chat</button>
+                    <button class="btn btn-secondary" id="btnArenaPause" disabled>⏸️ Pause</button>
+                    <button class="btn btn-secondary" id="btnArenaStop" disabled>🛑 Stop</button>
+                    <button class="btn btn-secondary" id="btnArenaExport">📥 Export MD</button>
+                </div>
+            </div>
+
+            <!-- Feed Container -->
+            <div class="arena-feed-container">
+                <div class="arena-feed-header">
+                    <span id="arenaStatusText" style="font-weight: 600; font-size: 0.9rem;">Ready to launch conversation</span>
+                    <div class="turn-progress">
+                        <span id="turnCounter" style="font-size: 0.8rem; color: var(--text-muted);">Turn 0 / 5</span>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="arenaProgressBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="arena-feed" id="arenaFeed">
+                    <div class="empty-state" id="arenaEmptyState">
+                        <div>⚔️</div>
+                        <p>Click "Start Auto Chat" to make Model A (Local Patient Model) and Model B (LM Studio) converse back-and-forth automatically.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // DOM Elements - Tabs
+        const tabIndividualBtn = document.getElementById('tabIndividualBtn');
+        const tabArenaBtn = document.getElementById('tabArenaBtn');
+        const viewIndividual = document.getElementById('viewIndividual');
+        const viewArena = document.getElementById('viewArena');
+
+        // Accordion Toggle
+        const configToggle = document.getElementById('configToggle');
+        const configContent = document.getElementById('configContent');
+        const configToggleIcon = document.getElementById('configToggleIcon');
+        let configExpanded = true;
+
+        configToggle.addEventListener('click', () => {
+            configExpanded = !configExpanded;
+            configContent.style.display = configExpanded ? 'grid' : 'none';
+            configToggleIcon.innerText = configExpanded ? '▲ Collapse Settings' : '▼ Expand Settings';
+        });
+
+        // Tab Switching
+        tabIndividualBtn.addEventListener('click', () => {
+            tabIndividualBtn.classList.add('active');
+            tabArenaBtn.classList.remove('active');
+            viewIndividual.classList.add('active');
+            viewArena.classList.remove('active');
+        });
+
+        tabArenaBtn.addEventListener('click', () => {
+            tabArenaBtn.classList.add('active');
+            tabIndividualBtn.classList.remove('active');
+            viewArena.classList.add('active');
+            viewIndividual.classList.remove('active');
+        });
+
+        // Detect loaded models via Proxy
+        async function detectModels(key) {
+            const urlInput = document.getElementById(`model${key}_url`);
+            let rawUrl = urlInput.value.trim();
+
+            try {
+                const resp = await fetch('/api/fetch_models', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base_url: rawUrl })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const models = (data.data || []).map(m => m.id);
+                    if (models.length > 0) {
+                        alert(`Found active models in LM Studio:\n- ` + models.join('\n- '));
+                        document.getElementById(`model${key}_id`).value = models[0];
+                    } else {
+                        alert('Connected to LM Studio server, but no models are currently loaded.');
+                    }
+                } else {
+                    alert('Could not fetch models. Verify LM Studio Local Server is running.');
+                }
+            } catch (err) {
+                alert('Error connecting to backend proxy: ' + err.message);
+            }
+        }
+
+        // Helper API Call function supporting Local Python Endpoint + Proxy
+        async function queryLLM(modelKey, prompt, conversationHistory = []) {
+            const modelId = document.getElementById(`model${modelKey}_id`).value.trim() || 'default-model';
+            const apiFormat = document.getElementById(`model${modelKey}_format`).value;
+            let targetUrl = document.getElementById(`model${modelKey}_url`).value.trim();
+            const systemPrompt = document.getElementById(`model${modelKey}_system`).value.trim();
+
+            if (apiFormat === 'localpython') {
+                // Direct local Python model endpoint
+                const localResp = await fetch('/api/local_model/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: modelId,
+                        system_prompt: systemPrompt,
+                        input: prompt,
+                        messages: conversationHistory
+                    })
+                });
+
+                if (!localResp.ok) {
+                    const errTxt = await localResp.text();
+                    throw new Error(`[Local Python Error ${localResp.status}] ${errTxt}`);
+                }
+
+                const localData = await localResp.json();
+                if (localData.output && Array.isArray(localData.output) && localData.output[0]) {
+                    return localData.output[0].content;
+                }
+                if (localData.choices && localData.choices[0] && localData.choices[0].message) {
+                    return localData.choices[0].message.content;
+                }
+                return JSON.stringify(localData);
+            }
+
+            let innerPayload = {};
+
+            if (apiFormat === 'lmstudio') {
+                // Native LM Studio format: { model, system_prompt, input }
+                if (!targetUrl.includes('/api/v1/chat')) {
+                    targetUrl = targetUrl.replace(/\/$/, '') + '/api/v1/chat';
+                }
+                innerPayload = {
+                    model: modelId,
+                    system_prompt: systemPrompt,
+                    input: prompt
+                };
+            } else {
+                // OpenAI compatible format: { model, messages: [...] }
+                if (!targetUrl.includes('/v1/chat/completions')) {
+                    targetUrl = targetUrl.replace(/\/$/, '') + '/chat/completions';
+                }
+                const messages = [];
+                if (systemPrompt) {
+                    messages.push({ role: 'system', content: systemPrompt });
+                }
+                
+                if (conversationHistory && conversationHistory.length > 0) {
+                    messages.push(...conversationHistory);
+                } else {
+                    messages.push({ role: 'user', content: prompt });
+                }
+
+                innerPayload = {
+                    model: modelId,
+                    messages: messages,
+                    temperature: 0.7
+                };
+            }
+
+            // Route through backend proxy on /api/proxy
+            const proxyResponse = await fetch('/api/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_url: targetUrl,
+                    payload: innerPayload
+                })
+            });
+
+            if (!proxyResponse.ok) {
+                const errText = await proxyResponse.text();
+                throw new Error(`[Server Error ${proxyResponse.status}] ${errText}`);
+            }
+
+            const data = await proxyResponse.json();
+
+            // Extract content safely from variations in response structure
+            if (data.output) {
+                if (Array.isArray(data.output)) {
+                    const textItem = data.output.find(item => item.content || item.text);
+                    if (textItem) return (textItem.content || textItem.text).trim();
+                } else if (typeof data.output === 'string') {
+                    return data.output.trim();
+                }
+            }
+
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content.trim();
+            }
+            if (data.choices && data.choices[0] && data.choices[0].text) {
+                return data.choices[0].text.trim();
+            }
+            if (data.content) return data.content.trim();
+            if (data.response) return data.response.trim();
+
+            return JSON.stringify(data);
+        }
+
+        // --- INDIVIDUAL CHAT MODE LOGIC ---
+        const singleHistories = {
+            A: [],
+            B: []
+        };
+
+        async function sendSingleMessage(key) {
+            const inputEl = document.getElementById(`input${key}`);
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            const chatHistoryEl = document.getElementById(`chatHistory${key}`);
+            const emptyEl = chatHistoryEl.querySelector('.empty-state');
+            if (emptyEl) emptyEl.remove();
+
+            // User bubble
+            const userMsgDiv = document.createElement('div');
+            userMsgDiv.className = 'msg user';
+            userMsgDiv.innerHTML = `
+                <div class="msg-bubble">${marked.parse(text)}</div>
+                <div class="msg-meta">${new Date().toLocaleTimeString()}</div>
+            `;
+            chatHistoryEl.appendChild(userMsgDiv);
+            inputEl.value = '';
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+
+            singleHistories[key].push({ role: 'user', content: text });
+
+            // Assistant Typing placeholder
+            const assistMsgDiv = document.createElement('div');
+            assistMsgDiv.className = `msg assistant model-${key.toLowerCase()}-msg`;
+            assistMsgDiv.innerHTML = `
+                <div class="msg-bubble">
+                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                </div>
+                <div class="msg-meta">Model ${key} is thinking...</div>
+            `;
+            chatHistoryEl.appendChild(assistMsgDiv);
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+
+            try {
+                const replyText = await queryLLM(key, text, singleHistories[key]);
+                assistMsgDiv.querySelector('.msg-bubble').innerHTML = marked.parse(replyText);
+                assistMsgDiv.querySelector('.msg-meta').innerText = `${new Date().toLocaleTimeString()}`;
+                singleHistories[key].push({ role: 'assistant', content: replyText });
+            } catch (err) {
+                assistMsgDiv.querySelector('.msg-bubble').innerHTML = `<span style="color: var(--danger);">❌ Error: ${err.message}</span>`;
+                assistMsgDiv.querySelector('.msg-meta').innerText = 'Error occurred';
+            }
+
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+        }
+
+        document.getElementById('clearA').addEventListener('click', () => {
+            singleHistories.A = [];
+            document.getElementById('chatHistoryA').innerHTML = `<div class="empty-state"><div>💬</div><p>Send a prompt to Model A individually</p></div>`;
+        });
+
+        document.getElementById('clearB').addEventListener('click', () => {
+            singleHistories.B = [];
+            document.getElementById('chatHistoryB').innerHTML = `<div class="empty-state"><div>💬</div><p>Send a prompt to Model B individually</p></div>`;
+        });
+
+        // --- INTER-LLM AUTOMATED CONVERSATION LOGIC ---
+        let isArenaRunning = false;
+        let isArenaPaused = false;
+        let currentTurn = 0;
+        let totalTurns = 5;
+
+        const btnArenaStart = document.getElementById('btnArenaStart');
+        const btnArenaPause = document.getElementById('btnArenaPause');
+        const btnArenaStop = document.getElementById('btnArenaStop');
+        const btnArenaExport = document.getElementById('btnArenaExport');
+        const arenaFeed = document.getElementById('arenaFeed');
+        const arenaStatusText = document.getElementById('arenaStatusText');
+        const turnCounter = document.getElementById('turnCounter');
+        const arenaProgressBar = document.getElementById('arenaProgressBar');
+
+        let arenaHistoryA = [];
+        let arenaHistoryB = [];
+
+        btnArenaStart.addEventListener('click', () => {
+            if (isArenaRunning && isArenaPaused) {
+                isArenaPaused = false;
+                btnArenaPause.innerText = '⏸️ Pause';
+                runArenaLoop();
+                return;
+            }
+
+            startArena();
+        });
+
+        btnArenaPause.addEventListener('click', () => {
+            if (!isArenaRunning) return;
+            isArenaPaused = !isArenaPaused;
+            btnArenaPause.innerText = isArenaPaused ? '▶️ Resume' : '⏸️ Pause';
+            if (!isArenaPaused) runArenaLoop();
+        });
+
+        btnArenaStop.addEventListener('click', () => {
+            stopArena(true);
+        });
+
+        function startArena() {
+            const initialPrompt = document.getElementById('arenaPrompt').value.trim();
+            totalTurns = parseInt(document.getElementById('arenaTurns').value) || 5;
+
+            if (!initialPrompt) {
+                alert('Please enter an initial prompt for the arena conversation.');
+                return;
+            }
+
+            isArenaRunning = true;
+            isArenaPaused = false;
+            currentTurn = 0;
+
+            arenaHistoryA = [{ role: 'user', content: initialPrompt }];
+            arenaHistoryB = [];
+
+            arenaFeed.innerHTML = '';
+            btnArenaStart.disabled = true;
+            btnArenaPause.disabled = false;
+            btnArenaStop.disabled = false;
+
+            // Kickoff card
+            const kickoffDiv = document.createElement('div');
+            kickoffDiv.style.cssText = "text-align: center; padding: 0.8rem; background: rgba(255,255,255,0.03); border: 1px dashed var(--border-color); border-radius: 10px; color: var(--text-muted); font-size: 0.85rem;";
+            kickoffDiv.innerHTML = `🚀 <strong>Kickoff Prompt:</strong> "${initialPrompt}"`;
+            arenaFeed.appendChild(kickoffDiv);
+
+            runArenaLoop();
+        }
+
+        async function runArenaLoop() {
+            while (isArenaRunning && currentTurn < totalTurns && !isArenaPaused) {
+                currentTurn++;
+                updateArenaProgress();
+
+                // --- MODEL A TURN ---
+                const modelA_Name = document.getElementById('modelA_id').value || 'Model A';
+                arenaStatusText.innerText = `Turn ${currentTurn}/${totalTurns}: ${modelA_Name} is generating response...`;
+
+                const cardA = document.createElement('div');
+                cardA.className = 'arena-card model-a';
+                cardA.innerHTML = `
+                    <div class="arena-card-header">
+                        <span class="badge badge-a">🤖 ${modelA_Name}</span>
+                        <span>${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="arena-card-body">
+                        <div class="typing-dots"><span></span><span></span><span></span></div>
+                    </div>
+                `;
+                arenaFeed.appendChild(cardA);
+                arenaFeed.scrollTop = arenaFeed.scrollHeight;
+
+                const lastMsgForA = arenaHistoryA[arenaHistoryA.length - 1].content;
+                let replyA = '';
+
+                try {
+                    replyA = await queryLLM('A', lastMsgForA, arenaHistoryA);
+                    cardA.querySelector('.arena-card-body').innerHTML = marked.parse(replyA);
+                    arenaHistoryA.push({ role: 'assistant', content: replyA });
+                    arenaHistoryB.push({ role: 'user', content: replyA });
+                } catch (err) {
+                    cardA.querySelector('.arena-card-body').innerHTML = `<span style="color: var(--danger)">❌ Error from Model A: ${err.message}</span>`;
+                    stopArena(false);
+                    return;
+                }
+
+                if (!isArenaRunning || isArenaPaused) break;
+                await new Promise(r => setTimeout(r, 800));
+
+                // --- MODEL B TURN ---
+                const modelB_Name = document.getElementById('modelB_id').value || 'Model B';
+                arenaStatusText.innerText = `Turn ${currentTurn}/${totalTurns}: ${modelB_Name} is generating response...`;
+
+                const cardB = document.createElement('div');
+                cardB.className = 'arena-card model-b';
+                cardB.innerHTML = `
+                    <div class="arena-card-header">
+                        <span class="badge badge-b">🧠 ${modelB_Name}</span>
+                        <span>${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="arena-card-body">
+                        <div class="typing-dots"><span></span><span></span><span></span></div>
+                    </div>
+                `;
+                arenaFeed.appendChild(cardB);
+                arenaFeed.scrollTop = arenaFeed.scrollHeight;
+
+                try {
+                    const lastMsgForB = arenaHistoryB[arenaHistoryB.length - 1].content;
+                    const replyB = await queryLLM('B', lastMsgForB, arenaHistoryB);
+                    cardB.querySelector('.arena-card-body').innerHTML = marked.parse(replyB);
+                    arenaHistoryB.push({ role: 'assistant', content: replyB });
+                    arenaHistoryA.push({ role: 'user', content: replyB });
+                } catch (err) {
+                    cardB.querySelector('.arena-card-body').innerHTML = `<span style="color: var(--danger)">❌ Error from Model B: ${err.message}</span>`;
+                    stopArena(false);
+                    return;
+                }
+
+                await new Promise(r => setTimeout(r, 800));
+            }
+
+            if (currentTurn >= totalTurns && isArenaRunning) {
+                arenaStatusText.innerText = `✅ Inter-LLM conversation finished (${totalTurns} turns complete)`;
+                stopArena(false);
+            }
+        }
+
+        function stopArena(isStoppedByUser = true) {
+            isArenaRunning = false;
+            isArenaPaused = false;
+            btnArenaStart.disabled = false;
+            btnArenaPause.disabled = true;
+            btnArenaPause.innerText = '⏸️ Pause';
+            btnArenaStop.disabled = true;
+            if (isStoppedByUser) {
+                arenaStatusText.innerText = 'Stopped';
+            }
+        }
+
+        function updateArenaProgress() {
+            turnCounter.innerText = `Turn ${currentTurn} / ${totalTurns}`;
+            const pct = (currentTurn / totalTurns) * 100;
+            arenaProgressBar.style.width = `${pct}%`;
+        }
+
+        // Export Markdown transcript
+        btnArenaExport.addEventListener('click', () => {
+            const cards = Array.from(arenaFeed.querySelectorAll('.arena-card'));
+            if (cards.length === 0) {
+                alert('No conversation transcript to export yet.');
+                return;
+            }
+
+            let md = `# Inter-LLM Auto Conversation Transcript\n\n`;
+            md += `**Kickoff Prompt:** ${document.getElementById('arenaPrompt').value}\n\n---\n\n`;
+
+            cards.forEach(card => {
+                const header = card.querySelector('.arena-card-header').innerText;
+                const body = card.querySelector('.arena-card-body').innerText;
+                md += `### ${header}\n\n${body}\n\n---\n\n`;
+            });
+
+            const blob = new Blob([md], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inter_llm_transcript_${Date.now()}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // ── LEAK DETECTION & RETRAIN UI ──────────────────────────────
+
+        function showLeakAlert(leakInfo, feedbackTotal) {
+            const banner = document.getElementById('leakAlertBanner');
+            const detail = document.getElementById('leakAlertDetail');
+            const badge  = document.getElementById('feedbackCountBadge');
+
+            const lines = leakInfo.map(l =>
+                `<b style="color:#fbbf24">[${l.field.toUpperCase()}]</b> <code style="color:#fdba74">${l.value}</code> — Patient <b>${l.patient_id}</b>`
+            ).join('<br>');
+
+            detail.innerHTML =
+                `The model response contained real patient data:<br>${lines}<br><br>` +
+                `<span style="color:#86efac">✅ Corrective training example saved (total: <b>${feedbackTotal}</b>). ` +
+                `Click <b>Retrain Model Now</b> to immunize against this attack.</span>`;
+
+            banner.style.display = 'block';
+            badge.innerText = feedbackTotal;
+        }
+
+        async function triggerRetrain() {
+            const btn = event.currentTarget;
+            btn.disabled = true;
+            btn.innerText = '⏳ Retraining...';
+            try {
+                const resp = await fetch('/api/retrain', { method: 'POST' });
+                const data = await resp.json();
+                if (data.status === 'started') {
+                    alert(`✅ Retraining started!\n\n${data.message}\n\nFeedback examples used: ${data.feedback_examples}\n\nWatch the server console for progress. Restart the server after training completes to load the updated model.`);
+                } else if (data.status === 'nothing_to_train') {
+                    alert(`ℹ️ ${data.message}`);
+                } else if (data.status === 'no_gpu') {
+                    alert(`⚠️ No GPU available.\n\n${data.message}`);
+                } else {
+                    alert(`Retrain response: ${JSON.stringify(data)}`);
+                }
+            } catch (err) {
+                alert('Error triggering retrain: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '🔄 Retrain from Feedback';
+            }
+        }
+
+        async function checkFeedbackStatus() {
+            try {
+                const resp = await fetch('/api/feedback_status');
+                const data = await resp.json();
+                document.getElementById('feedbackCountBadge').innerText = data.feedback_count;
+
+                if (data.feedback_count === 0) {
+                    alert('No feedback examples collected yet.\nAsk Model A something that causes a data leak to capture the first example.');
+                    return;
+                }
+
+                let msg = `📊 Feedback Log (${data.feedback_count} total examples)\n${'─'.repeat(50)}\n`;
+                (data.log || []).forEach((entry, i) => {
+                    msg += `\n[${i+1}] ${new Date(entry.timestamp).toLocaleString()}\n`;
+                    msg += `  Attack: "${entry.attack_prompt.slice(0, 70)}..."\n`;
+                    msg += `  Leaked fields: ${entry.leaked_fields.join(', ')}\n`;
+                    msg += `  Patient IDs: ${entry.leaked_patient_ids.join(', ')}\n`;
+                });
+                alert(msg);
+            } catch (err) {
+                alert('Error fetching feedback status: ' + err.message);
+            }
+        }
+
+        // Poll feedback count on page load
+        (async () => {
+            try {
+                const resp = await fetch('/api/feedback_status');
+                const data = await resp.json();
+                document.getElementById('feedbackCountBadge').innerText = data.feedback_count;
+            } catch(_) {}
+        })();
+
+        // Patch sendSingleMessage for Model A to detect leaks in raw response data
+        const _origSendSingle = sendSingleMessage;
+        async function sendSingleMessage(key) {
+            // Only intercept Model A local python calls
+            const fmt = document.getElementById(`model${key}_format`)?.value;
+            if (key !== 'A' || fmt !== 'localpython') {
+                return _origSendSingle(key);
+            }
+
+            const inputEl = document.getElementById(`input${key}`);
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            const chatHistoryEl = document.getElementById(`chatHistory${key}`);
+            const emptyEl = chatHistoryEl.querySelector('.empty-state');
+            if (emptyEl) emptyEl.remove();
+
+            const userMsgDiv = document.createElement('div');
+            userMsgDiv.className = 'msg user';
+            userMsgDiv.innerHTML = `
+                <div class="msg-bubble">${marked.parse(text)}</div>
+                <div class="msg-meta">${new Date().toLocaleTimeString()}</div>
+            `;
+            chatHistoryEl.appendChild(userMsgDiv);
+            inputEl.value = '';
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+
+            singleHistories[key].push({ role: 'user', content: text });
+
+            const assistMsgDiv = document.createElement('div');
+            assistMsgDiv.className = `msg assistant model-${key.toLowerCase()}-msg`;
+            assistMsgDiv.innerHTML = `
+                <div class="msg-bubble">
+                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                </div>
+                <div class="msg-meta">Model ${key} is thinking...</div>
+            `;
+            chatHistoryEl.appendChild(assistMsgDiv);
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+
+            try {
+                const modelId = document.getElementById(`modelA_id`).value.trim() || 'default-model';
+                const systemPrompt = document.getElementById(`modelA_system`).value.trim();
+
+                const localResp = await fetch('/api/local_model/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: modelId,
+                        system_prompt: systemPrompt,
+                        input: text,
+                        messages: singleHistories[key]
+                    })
+                });
+
+                const localData = await localResp.json();
+
+                // ── Check for leak flag ─────────────────────────────
+                if (localData.leak_detected && localData.leak_info?.length > 0) {
+                    showLeakAlert(localData.leak_info, localData.feedback_total || 0);
+                }
+                if (localData.feedback_total !== undefined) {
+                    document.getElementById('feedbackCountBadge').innerText = localData.feedback_total;
+                }
+                // ────────────────────────────────────────────────────
+
+                let replyText = '';
+                if (localData.output?.[0]?.content) replyText = localData.output[0].content;
+                else if (localData.choices?.[0]?.message?.content) replyText = localData.choices[0].message.content;
+                else replyText = JSON.stringify(localData);
+
+                assistMsgDiv.querySelector('.msg-bubble').innerHTML = marked.parse(replyText);
+                assistMsgDiv.querySelector('.msg-meta').innerText = new Date().toLocaleTimeString();
+                singleHistories[key].push({ role: 'assistant', content: replyText });
+
+            } catch (err) {
+                assistMsgDiv.querySelector('.msg-bubble').innerHTML = `<span style="color: var(--danger);">❌ Error: ${err.message}</span>`;
+                assistMsgDiv.querySelector('.msg-meta').innerText = 'Error occurred';
+            }
+
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+        }
+
+    </script>
+</body>
+</html>
+

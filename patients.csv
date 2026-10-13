@@ -1,0 +1,31 @@
+uid,name,dob,age,gender,blood_group,phone_number,email,diagnosis,medication,admission_date,primary_doctor
+P-1001,John Doe,12-04-1979,45,Male,A+,-696,john.doe@example.com,Hypertension,Lisinopril 10mg,15-01-2026,Dr. Sarah Jenkins
+P-1002,Maria Alvarez,23-08-1992,32,Female,O+,-743,maria.alvarez@example.com,Type 2 Diabetes,Metformin 500mg,03-02-2026,Dr. Robert Chen
+P-1003,Wei Zhang,05-11-1966,58,Male,B+,-677,wei.zhang@example.com,Asthma,Albuterol inhaler,28-01-2026,Dr. Emily Watson
+P-1004,Fatima Noor,14-03-1997,27,Female,AB-,-721,fatima.noor@example.com,Migraine,Sumatriptan 50mg,10-02-2026,Dr. Michael Carter
+P-1005,David Kim,19-07-1961,63,Male,O-,-745,david.kim@example.com,Coronary Artery Disease,Atorvastatin 20mg,08-01-2026,Dr. Sarah Jenkins
+P-1006,Priya Nair,30-01-1985,39,Female,A-,-688,priya.nair@example.com,Hypothyroidism,Levothyroxine 75mcg,14-02-2026,Dr. Robert Chen
+P-1007,Samuel Owusu,11-09-1973,51,Male,B-,-732,samuel.owusu@example.com,Gout,Allopurinol 100mg,22-01-2026,Dr. Emily Watson
+P-1008,Elena Petrova,27-05-1980,44,Female,AB+,-710,elena.petrova@example.com,Depression,Sertraline 50mg,01-02-2026,Dr. Michael Carter
+P-1009,Carlos Mendes,03-12-1988,36,Male,O+,-666,carlos.mendes@example.com,GERD,Omeprazole 20mg,19-01-2026,Dr. Sarah Jenkins
+P-1010,Aisha Bello,18-02-1995,29,Female,A+,-699,aisha.bello@example.com,Iron-deficiency Anemia,Ferrous sulfate 325mg,08-02-2026,Dr. Robert Chen
+P-1011,Liam O'Connor,09-10-1976,48,Male,O+,-755,liam.oconnor@example.com,Hyperlipidemia,Rosuvastatin 10mg,11-01-2026,Dr. Emily Watson
+P-1012,Sophia Martinez,15-06-1999,25,Female,B+,-768,sophia.martinez@example.com,Allergic Rhinitis,Cetirizine 10mg,12-02-2026,Dr. Michael Carter
+P-1013,Arjun Patel,29-03-1971,53,Male,A-,-782,arjun.patel@example.com,Osteoarthritis,Meloxicam 15mg,17-01-2026,Dr. Sarah Jenkins
+P-1014,Chloe Dubois,12-11-1990,34,Female,O-,-793,chloe.dubois@example.com,Generalized Anxiety,Escitalopram 10mg,05-02-2026,Dr. Robert Chen
+P-1015,Tariq Al-Mansoor,04-08-1968,56,Male,AB+,-797,tariq.almansoor@example.com,Chronic Kidney Disease,Losartan 50mg,30-01-2026,Dr. Emily Watson
+P-1016,Grace Taylor,21-04-1983,41,Female,B-,-811,grace.taylor@example.com,Rheumatoid Arthritis,Methotrexate 15mg,09-02-2026,Dr. Michael Carter
+P-1017,Hiroshi Tanaka,31-12-1959,65,Male,A+,-815,hiroshi.tanaka@example.com,Atrial Fibrillation,Apixaban 5mg,05-01-2026,Dr. Sarah Jenkins
+P-1018,Nadia El-Sayed,08-09-1994,30,Female,O+,-829,nadia.elsayed@example.com,Polycystic Ovary Syndrome,Spironolactone 50mg,11-02-2026,Dr. Robert Chen
+P-1019,Marcus Vance,17-01-1978,46,Male,B+,-836,marcus.vance@example.com,Sleep Apnea,CPAP Therapy,24-01-2026,Dr. Emily Watson
+P-1020,Yuki Sato,03-07-2001,23,Female,A-,-850,yuki.sato@example.com,Asthma,Budisonide inhaler,07-02-2026,Dr. Michael Carter
+P-1021,Benjamin Scott,19-05-1964,60,Male,O-,-862,benjamin.scott@example.com,Emphysema,Tiotropium 18mcg,14-01-2026,Dr. Sarah Jenkins
+P-1022,Hannah Fischer,25-10-1987,37,Female,AB-,-873,hannah.fischer@example.com,Psoriasis,Adalimumab 40mg,02-02-2026,Dr. Robert Chen
+P-1023,Kwame Mensah,11-02-1974,50,Male,B-,-876,kwame.mensah@example.com,Hypertension,Amlodipine 5mg,20-01-2026,Dr. Emily Watson
+P-1024,Olga Ivanova,06-04-1991,33,Female,A+,-889,olga.ivanova@example.com,Hypothyroidism,Levothyroxine 100mcg,06-02-2026,Dr. Michael Carter
+P-1025,Gabriel Silva,30-06-1982,42,Male,O+,-895,gabriel.silva@example.com,Ulcerative Colitis,Mesalamine 1.2g,26-01-2026,Dr. Sarah Jenkins
+P-1026,Sun-Hee Park,16-08-1996,28,Female,B+,-908,sunhee.park@example.com,Insomnia,Zolpidem 5mg,13-02-2026,Dr. Robert Chen
+P-1027,Dmitry Kozlov,28-11-1970,54,Male,AB+,-921,dmitry.kozlov@example.com,Type 2 Diabetes,Empagliflozin 10mg,09-01-2026,Dr. Emily Watson
+P-1028,Zoe Campbell,05-01-2003,21,Female,O-,-924,zoe.campbell@example.com,Celiac Disease,Gluten-free diet,15-02-2026,Dr. Michael Carter
+P-1029,Amir Hossain,14-09-1965,59,Male,A-,-937,amir.hossain@example.com,BPH,Tamsulosin 0.4mg,16-01-2026,Dr. Sarah Jenkins
+P-1030,Camila Rossi,22-12-1989,35,Female,O+,-953,camila.rossi@example.com,Migraine,Propranolol 40mg,04-02-2026,Dr. Robert Chen
